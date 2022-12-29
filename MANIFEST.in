@@ -1,0 +1,3 @@
+include files/*
+include template/META-INF/container.xml
+include template/OEBPS/*.css
