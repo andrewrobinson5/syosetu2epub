@@ -69,25 +69,25 @@ class Novel:
                 self.chapterCount+=1
                 tocInsert += "<li><a href=\"" + str(self.chapterCount) + ".xhtml\">" + entry + "</a></li>\n"
                 tocInsertLegacy += "<navPoint id=\"toc" + str(self.chapterCount) + "\" playOrder=\"" + str(self.chapterCount) + "\"><navLabel><text>" + entry + "</text></navLabel><content src=\"" + str(self.chapterCount) + ".xhtml\"/></navPoint>"
-        with open(os.path.join(__location__, 'files/nav.xhtml')) as t:
+        with open(os.path.join(__location__, 'files/nav.xhtml'), encoding="utf-8") as t:
             template = string.Template(t.read())
             finalOutput = template.substitute(TITLETAG=self.title, TOCTAG=tocInsert)
             oebpsDir = os.path.join(self.tempDir.name, self.title, "OEBPS")
-            with open(os.path.join(oebpsDir, "nav.xhtml"), "w") as output:
+            with open(os.path.join(oebpsDir, "nav.xhtml"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
-        with open(os.path.join(__location__, 'files/toc.ncx')) as t:
+        with open(os.path.join(__location__, 'files/toc.ncx'), encoding="utf-8") as t:
             template = string.Template(t.read())
             finalOutput = template.substitute(IDTAG=self.seriesCode, TITLETAG=self.title, TOCTAG=tocInsertLegacy)
             oebpsDir = os.path.join(self.tempDir.name, self.title, "OEBPS")
-            with open(os.path.join(oebpsDir, "toc.ncx"), "w") as output:
+            with open(os.path.join(oebpsDir, "toc.ncx"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
 
     def genTitlePage(self):
-        with open(os.path.join(__location__, 'files/titlepage.xhtml')) as t:
+        with open(os.path.join(__location__, 'files/titlepage.xhtml'), encoding="utf-8") as t:
             template = string.Template(t.read())
             finalOutput = template.substitute(TITLETAG=self.title, AUTHORTAG=self.author)
             oebpsDir = os.path.join(self.tempDir.name, self.title, "OEBPS")
-            with open(os.path.join(oebpsDir, "titlepage.xhtml"), "w") as output:
+            with open(os.path.join(oebpsDir, "titlepage.xhtml"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
 
     def genBook(self):
@@ -124,15 +124,15 @@ class Novel:
                     line = "<p>" + line + "</p>"
                 chapterText += line
                 chapterText += "\n"
-            with open(os.path.join(__location__, 'files/chaptertemplate.xhtml')) as t:
+            with open(os.path.join(__location__, 'files/chaptertemplate.xhtml'), encoding="utf-8") as t:
                 template = string.Template(t.read())
                 finalOutput = template.substitute(TITLETAG=self.title, BODYTAG=chapterText)
-                with open(os.path.join(self.tempDir.name, self.title, 'OEBPS', (str(i + 1) + '.xhtml')), "w") as output:
+                with open(os.path.join(self.tempDir.name, self.title, 'OEBPS', (str(i + 1) + '.xhtml')), "w", encoding="utf-8") as output:
                     output.write(finalOutput)
             chapterList += "<item media-type=\"application/xhtml+xml\" href=\"" + str(i + 1) + ".xhtml""\" id=\"_" + str(i + 1) + ".xhtml\" />"
             chapterListAgain += "<itemref idref=\"_" + str(i + 1) + ".xhtml\" />"
 
-        with open(os.path.join(__location__, 'files/content.opf')) as t:
+        with open(os.path.join(__location__, 'files/content.opf'), encoding="utf-8") as t:
             template = string.Template(t.read())
             authorName = self.author.split("：", 1)[1]
             if '<a' in authorName:
@@ -140,7 +140,7 @@ class Novel:
                 authorName = authorName.split("<")[0]
             finalOutput = template.substitute(IDTAG=self.seriesCode, TITLETAG=self.title, AUTHORTAG=authorName, TIMESTAMPTAG=datetime.now(pytz.utc).isoformat().split('.', 1)[0] + 'Z', CHAPTERSTAG=chapterList, SPINETAG=chapterListAgain)
             oebpsDir = os.path.join(self.tempDir.name, self.title, "OEBPS")
-            with open(os.path.join(oebpsDir, "content.opf"), "w") as output:
+            with open(os.path.join(oebpsDir, "content.opf"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
         
         with zipfile.ZipFile(self.outputPath, 'w') as zip:
@@ -162,7 +162,7 @@ if __name__ == "__main__":
         if ".syosetu.com/" in arg:
             myRequest.link = arg
     if myRequest.link == None:
-        print("USAGE: syosetu2epub http://*.ncode.com/******")
+        print("USAGE: syosetu2epub https://*syosetu.com/******")
         print("OUTPUT: EPUB formatted ebook will be generated in current working directory")
         os._exit(0)
 
