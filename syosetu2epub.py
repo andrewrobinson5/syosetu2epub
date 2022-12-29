@@ -62,7 +62,7 @@ class Novel:
             if "class=\"chapter_title\"" in line:
                 chapter = line.split(">", 1)[1]
                 chapter = chapter.split("</div>", 1)[0]
-                tocInsert += "<li>" + chapter + "</li>\n"
+                tocInsert += "<li><span>" + chapter + "<span></li>\n"
             elif "<a href=\"/" + self.seriesCode + "/" in line:
                 entry = line.split(">", 1)[1]
                 entry = entry.split("</a>", 1)[0]
