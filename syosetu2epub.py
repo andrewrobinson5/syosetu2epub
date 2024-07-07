@@ -57,6 +57,7 @@ class Novel:
     def build(self):
         tempDir = tempfile.TemporaryDirectory()
         shutil.copytree(os.path.join(__location__, 'template'), os.path.join(tempDir.name, self.title))
+        os.mkdir(os.path.join(tempDir.name, self.title, "images"))
 
         imgCount = 0
         def adjust(root) -> str:
