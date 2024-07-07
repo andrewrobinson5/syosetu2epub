@@ -31,7 +31,7 @@ class Novel:
         # get author, title
         self.title = self.page.find(class_="novel_title").text
         self.title = "".join(c for c in self.title if c.isalnum() or c in " 【】「」").rstrip()
-        self.author = self.page.find(class_="novel_writername").find('a').text
+        self.author = self.page.find(class_="novel_writername").text.split(':', 1)[1]
 
         self.tocInsert = ""
         self.tocInsertLegacy = ""
@@ -94,7 +94,7 @@ class Novel:
                 output.write(finalOutput)
         with open(os.path.join(__location__, 'files/titlepage.xhtml'), encoding="utf-8") as t:
             template = string.Template(t.read())
-            finalOutput = template.substitute(TITLETAG=self.title, AUTHORTAG="作家: " + self.author)
+            finalOutput = template.substitute(TITLETAG=self.title, AUTHORTAG="作者: " + self.author)
             oebpsDir = os.path.join(tempDir.name, self.title, "OEBPS")
             with open(os.path.join(oebpsDir, "titlepage.xhtml"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
