@@ -13,6 +13,7 @@ import pytz
 cwd = os.getcwd()
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
+
 class Novel:
     def __init__(self, link: str):
         self.chapterCount = 0
@@ -26,12 +27,12 @@ class Novel:
         self.tocPageCount = 1
         a = self.page.find(class_="novelview_pager-last")
         if a:
-           self.tocPageCount = int(a["href"].split('=')[1])
+            self.tocPageCount = int(a["href"].split('=')[1])
 
         # get author, title
         self.title = self.page.find(class_="novel_title").text
         self.title = "".join(c for c in self.title if c.isalnum() or c in " 【】「」").rstrip()
-        self.author = self.page.find(class_="novel_writername").text.split(':', 1)[1]
+        self.author = self.page.find(class_="novel_writername").text.split('：', 1)[1]
 
         self.tocInsert = ""
         self.tocInsertLegacy = ""
@@ -50,16 +51,18 @@ class Novel:
                     self.tocInsert += "<li><span>" + item.contents[0] + "<span></li>\n"
                 else:
                     title = item.contents[0]
-                    self.chapterCount+=1
+                    self.chapterCount += 1
                     self.tocInsert += "<li><a href=\"" + str(self.chapterCount) + ".xhtml\">" + title + "</a></li>\n"
-                    self.tocInsertLegacy += "<navPoint id=\"toc" + str(self.chapterCount) + "\" playOrder=\"" + str(self.chapterCount) + "\"><navLabel><text>" + title + "</text></navLabel><content src=\"" + str(self.chapterCount) + ".xhtml\"/></navPoint>"
-        
+                    self.tocInsertLegacy += "<navPoint id=\"toc" + str(self.chapterCount) + "\" playOrder=\"" + str(
+                        self.chapterCount) + "\"><navLabel><text>" + title + "</text></navLabel><content src=\"" + str(self.chapterCount) + ".xhtml\"/></navPoint>"
+
     def build(self):
         tempDir = tempfile.TemporaryDirectory()
         shutil.copytree(os.path.join(__location__, 'template'), os.path.join(tempDir.name, self.title))
         os.mkdir(os.path.join(tempDir.name, self.title, "images"))
 
         imgCount = 0
+
         def adjust(root) -> str:
             nonlocal imgCount
             for item in root.find_all('a'):
@@ -77,7 +80,7 @@ class Novel:
                 for item in root.find_all('br'):
                     item.decompose()
 
-            return root.prettify()        
+            return root.prettify()
 
         # THE FOLLOWING WRITES THE COMPLETE TABLE OF CONTENTS AND TITLE PAGE FILES
         with open(os.path.join(__location__, 'files/nav.xhtml'), encoding="utf-8") as t:
@@ -124,16 +127,18 @@ class Novel:
                 finalOutput = template.substitute(TITLETAG=title, BODYTAG=chapterText)
                 with open(os.path.join(tempDir.name, self.title, 'OEBPS', (str(i + 1) + '.xhtml')), "w", encoding="utf-8") as output:
                     output.write(finalOutput)
-            chapterList += "<item media-type=\"application/xhtml+xml\" href=\"" + str(i + 1) + ".xhtml""\" id=\"_" + str(i + 1) + ".xhtml\" />"
+            chapterList += "<item media-type=\"application/xhtml+xml\" href=\"" + \
+                str(i + 1) + ".xhtml""\" id=\"_" + str(i + 1) + ".xhtml\" />"
             chapterListSpine += "<itemref idref=\"_" + str(i + 1) + ".xhtml\" />"
 
         with open(os.path.join(__location__, 'files/content.opf'), encoding="utf-8") as t:
             template = string.Template(t.read())
-            finalOutput = template.substitute(IDTAG=self.seriesCode, TITLETAG=self.title, AUTHORTAG=self.author, TIMESTAMPTAG=datetime.now(pytz.utc).isoformat().split('.', 1)[0] + 'Z', CHAPTERSTAG=chapterList, SPINETAG=chapterListSpine)
+            finalOutput = template.substitute(IDTAG=self.seriesCode, TITLETAG=self.title, AUTHORTAG=self.author, TIMESTAMPTAG=datetime.now(
+                pytz.utc).isoformat().split('.', 1)[0] + 'Z', CHAPTERSTAG=chapterList, SPINETAG=chapterListSpine)
             oebpsDir = os.path.join(tempDir.name, self.title, "OEBPS")
             with open(os.path.join(oebpsDir, "content.opf"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
-        
+
         # zip up all items and rename .zip to .epub
         outputPath = os.path.join(cwd, self.title)
         appendage = ""
@@ -169,9 +174,10 @@ class SyosetuRequest:
         if not r.text:
             raise Exception("Unable to get response from " + link)
         self.page = r.text
-        
+
     def getPage(self) -> str:
         return self.page
+
 
 if __name__ == "__main__":
     link: str = None
