@@ -25,14 +25,14 @@ class Novel:
 
         # get TOC page count
         self.tocPageCount = 1
-        a = self.page.find(class_="novelview_pager-last")
-        if a:
-            self.tocPageCount = int(a["href"].split('=')[1])
+        a_tag = self.page.find(class_="c-pager__item--last")
+        if a_tag:
+            self.tocPageCount = int(a_tag["href"].split('=')[1])
 
         # get author, title
-        self.title = self.page.find(class_="novel_title").text
+        self.title = self.page.find(class_="p-novel__title").text
         self.title = "".join(c for c in self.title if c.isalnum() or c in " 【】「」").rstrip()
-        self.author = self.page.find(class_="novel_writername").text.split('：', 1)[1]
+        self.author = self.page.find(class_="p-novel__author").text.split('：', 1)[1]
 
         self.tocInsert = ""
         self.tocInsertLegacy = ""
@@ -44,12 +44,12 @@ class Novel:
             i += 1
 
         for page in pages:
-            indexBox = page.find(class_="index_box")
-            for item in indexBox.findAll(["div", "a"]):
-                a = item.get('class')
-                if a and "chapter_title" in a:
-                    self.tocInsert += "<li><span>" + item.contents[0] + "<span></li>\n"
-                else:
+            indexBox = page.find(class_="p-eplist")
+            for item in indexBox.find_all(["div", "a"]):
+                class_name = item.get("class")[0]
+                if "chapter-title" in class_name:
+                    self.tocInsert += "<li><span>" + item.contents[0] + "</span></li>\n"
+                elif "subtitle" in class_name:
                     title = item.contents[0]
                     self.chapterCount += 1
                     self.tocInsert += "<li><a href=\"" + str(self.chapterCount) + ".xhtml\">" + title + "</a></li>\n"
@@ -106,21 +106,13 @@ class Novel:
         chapterList = ""
         chapterListSpine = ""
         for i in range(self.chapterCount):
+            print(f"Downloading chapter {i + 1}/{self.chapterCount}")
             thisChapter = BeautifulSoup(SyosetuRequest(self.link + "/" + str(i+1)).getPage(), 'html.parser')
-            title = thisChapter.find(class_="novel_subtitle").text
+            title = thisChapter.find(class_="p-novel__title").text
             chapterText = "<h2 id=\"toc_index_1\">" + title + "</h2>\n"
 
-            preface = thisChapter.find(id="novel_p")
-            if preface:
-                chapterText += adjust(preface) + "<hr />\n"
-
-            chapter = thisChapter.find(id="novel_honbun")
-            if chapter:
-                chapterText += adjust(chapter)
-
-            afterword = thisChapter.find(id="novel_a")
-            if afterword:
-                chapterText += "<hr />" + adjust(afterword)
+            sectionTexts = [adjust(text) for text in thisChapter.find_all(class_="js-novel-text")]
+            chapterText += "<hr/>\n".join(sectionTexts)
 
             with open(os.path.join(__location__, 'files/chaptertemplate.xhtml'), encoding="utf-8") as t:
                 template = string.Template(t.read())
