@@ -11,5 +11,5 @@ Clone this repository and run ```python syosetu2epub.py https://*syosetu.com/***
 
 It will produce an e-reader friendly, valid EPUB3 document.
 
-## Limitations
-Does not yet support downloading from a range of chapters, can only download entire Novels.
+## Chapter Range
+If you would prefer to download specific chapters, and not the whole novel, add the flag --min # and/or --max #, such as ```python syosetu2epub.py https://*syosetu.com/****** --min 10 --max 50```
