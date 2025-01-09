@@ -13,9 +13,15 @@ import pytz
 cwd = os.getcwd()
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
+compact = False
+min_chapter = 0
+max_chapter = 100000000
 
 class Novel:
     def __init__(self, link: str):
+        global min_chapter
+        global max_chapter
+        
         self.chapterCount = 0
         self.link = link
         if self.link[-1] == "/":
@@ -43,19 +49,38 @@ class Novel:
             pages.append(BeautifulSoup(SyosetuRequest(self.link + "/?p=" + str(i)).getPage(), 'html.parser'))
             i += 1
 
+        tocInsert = ""
+        tocInserted = ""
+        
         for page in pages:
+            if self.chapterCount > max_chapter:
+                break
+            
             indexBox = page.find(class_="p-eplist")
             for item in indexBox.find_all(["div", "a"]):
                 class_name = item.get("class")[0]
                 if "chapter-title" in class_name:
-                    self.tocInsert += "<li><span>" + item.contents[0] + "</span></li>\n"
+                    tocInsert = "<li><span>" + item.contents[0] + "</span></li>\n"
                 elif "subtitle" in class_name:
                     title = item.contents[0]
                     self.chapterCount += 1
+                    
+                    if self.chapterCount < min_chapter:
+                        continue
+                    if self.chapterCount > max_chapter:
+                        break
+                        
+                    if tocInsert != tocInserted:
+                        self.tocInsert += tocInsert
+                        tocInserted = tocInsert
+                    
                     self.tocInsert += "<li><a href=\"" + str(self.chapterCount) + ".xhtml\">" + title + "</a></li>\n"
                     self.tocInsertLegacy += "<navPoint id=\"toc" + str(self.chapterCount) + "\" playOrder=\"" + str(
                         self.chapterCount) + "\"><navLabel><text>" + title + "</text></navLabel><content src=\"" + str(self.chapterCount) + ".xhtml\"/></navPoint>"
-
+        
+        if self.chapterCount < max_chapter:
+            max_chapter = self.chapterCount
+        
     def build(self):
         tempDir = tempfile.TemporaryDirectory()
         shutil.copytree(os.path.join(__location__, 'template'), os.path.join(tempDir.name, self.title))
@@ -106,7 +131,10 @@ class Novel:
         chapterList = ""
         chapterListSpine = ""
         for i in range(self.chapterCount):
-            print(f"Downloading chapter {i + 1}/{self.chapterCount}")
+            if i < min_chapter - 1 or i > max_chapter - 1:
+                continue
+            
+            print(f"Downloading chapter {i + 1}/{max_chapter}")
             thisChapter = BeautifulSoup(SyosetuRequest(self.link + "/" + str(i+1)).getPage(), 'html.parser')
             title = thisChapter.find(class_="p-novel__title").text
             chapterText = "<h2 id=\"toc_index_1\">" + title + "</h2>\n"
@@ -173,21 +201,41 @@ class SyosetuRequest:
 
 if __name__ == "__main__":
     link: str = None
-    global compact
-    compact = False
-    for arg in sys.argv:
+    skip_next = False
+    
+    for i, arg in enumerate(sys.argv):
+        if skip_next:
+            skip_next = False
+            continue
+        
         if ".syosetu.com/" in arg:
             link = arg
         if "-c" in arg:
             compact = True
-        if arg == "-h" or arg == "--Help":
+        if "--min" in arg:
+            if i + 1 < len(sys.argv) and str.isdigit(sys.argv[i + 1]):
+                min_chapter = int(sys.argv[i + 1])
+            else:
+                print("Error: No min_chapter found after --min.")
+                os._exit(0)
+        if "--max" in arg:
+            if i + 1 < len(sys.argv) and str.isdigit(sys.argv[i + 1]):
+                max_chapter = int(sys.argv[i + 1])
+            else:
+                print("Error: No min_chapter found after --max.")
+                os._exit(0)
+                
+        if arg == "-h" or arg == "--Help" or arg == "--help":
             print("USAGE: syosetu2epub https://*.syosetu.com/******")
             print("OUTPUT: EPUB formatted ebook will be generated in current working directory")
             print("`-c`: Syosetu.com adds large spacing between blocks of text via br tags, which may greatly reduce the amount of words per page shown. Use `-c` to enable compact mode and ignore these spacers.")
+            print("`--min`: Minimum chapter to start downloading from.")
+            print("`--max`: Maximum chapter to download until.")
             os._exit(0)
 
     if link == None:
         print("USAGE: syosetu2epub https://*.syosetu.com/******")
+        print("HELP: syosetu2epub -h")
         print("OUTPUT: EPUB formatted ebook will be generated in current working directory")
         os._exit(0)
 
