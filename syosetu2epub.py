@@ -9,6 +9,7 @@ import string
 from datetime import datetime
 import requests
 import pytz
+from html import escape
 
 cwd = os.getcwd()
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -40,6 +41,7 @@ class Novel:
         # get author, title
         self.title = self.page.find(class_="p-novel__title").text
         self.title = "".join(c for c in self.title if c.isalnum() or c in " 【】「」").rstrip()
+        self.title = escape(self.title)
         self.author = self.page.find(class_="p-novel__author").text.split('：', 1)[1]
 
         self.tocInsert = ""
@@ -62,9 +64,9 @@ class Novel:
             for item in indexBox.find_all(["div", "a"]):
                 class_name = item.get("class")[0]
                 if "chapter-title" in class_name:
-                    tocInsert = "<li><span>" + item.contents[0] + "</span></li>\n"
+                    tocInsert = "<li><span>" + escape(item.contents[0]) + "</span></li>\n"
                 elif "subtitle" in class_name:
-                    title = item.contents[0]
+                    title = escape(item.contents[0])
                     self.chapterCount += 1
                     
                     if self.chapterCount < min_chapter:
@@ -139,6 +141,7 @@ class Novel:
             print(f"Downloading chapter {i + 1}/{max_chapter}")
             thisChapter = BeautifulSoup(SyosetuRequest(self.link + "/" + str(i+1)).getPage(), 'html.parser')
             title = thisChapter.find(class_="p-novel__title").text
+            title = escape(title)
             chapterText = "<h2 id=\"toc_index_1\">" + title + "</h2>\n"
 
             sectionTexts = [adjust(text) for text in thisChapter.find_all(class_="js-novel-text")]
@@ -220,12 +223,14 @@ if __name__ == "__main__":
         if "--min" in arg:
             if i + 1 < len(sys.argv) and str.isdigit(sys.argv[i + 1]):
                 min_chapter = int(sys.argv[i + 1])
+                skip_next = True
             else:
                 print("Error: No min_chapter found after --min.")
                 os._exit(0)
         if "--max" in arg:
             if i + 1 < len(sys.argv) and str.isdigit(sys.argv[i + 1]):
                 max_chapter = int(sys.argv[i + 1])
+                skip_next = True
             else:
                 print("Error: No min_chapter found after --max.")
                 os._exit(0)
