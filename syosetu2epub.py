@@ -9,11 +9,14 @@ import string
 from datetime import datetime
 import requests
 import pytz
+from html import escape
 
 cwd = os.getcwd()
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 compact = False
+horizontal_class = ''
+page_direction = 'rtl'
 min_chapter = 0
 max_chapter = 100000000
 
@@ -38,6 +41,7 @@ class Novel:
         # get author, title
         self.title = self.page.find(class_="p-novel__title").text
         self.title = "".join(c for c in self.title if c.isalnum() or c in " 【】「」").rstrip()
+        self.title = escape(self.title)
         self.author = self.page.find(class_="p-novel__author").text.split('：', 1)[1]
 
         self.tocInsert = ""
@@ -60,9 +64,9 @@ class Novel:
             for item in indexBox.find_all(["div", "a"]):
                 class_name = item.get("class")[0]
                 if "chapter-title" in class_name:
-                    tocInsert = "<li><span>" + item.contents[0] + "</span></li>\n"
+                    tocInsert = "<li><span>" + escape(item.contents[0]) + "</span></li>\n"
                 elif "subtitle" in class_name:
-                    title = item.contents[0]
+                    title = escape(item.contents[0])
                     self.chapterCount += 1
                     
                     if self.chapterCount < min_chapter:
@@ -110,7 +114,7 @@ class Novel:
         # THE FOLLOWING WRITES THE COMPLETE TABLE OF CONTENTS AND TITLE PAGE FILES
         with open(os.path.join(__location__, 'files/nav.xhtml'), encoding="utf-8") as t:
             template = string.Template(t.read())
-            finalOutput = template.substitute(TITLETAG=self.title, TOCTAG=self.tocInsert)
+            finalOutput = template.substitute(TITLETAG=self.title, TOCTAG=self.tocInsert, HTMLCLASS=horizontal_class)
             oebpsDir = os.path.join(tempDir.name, self.title, "OEBPS")
             with open(os.path.join(oebpsDir, "nav.xhtml"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
@@ -137,6 +141,7 @@ class Novel:
             print(f"Downloading chapter {i + 1}/{max_chapter}")
             thisChapter = BeautifulSoup(SyosetuRequest(self.link + "/" + str(i+1)).getPage(), 'html.parser')
             title = thisChapter.find(class_="p-novel__title").text
+            title = escape(title)
             chapterText = "<h2 id=\"toc_index_1\">" + title + "</h2>\n"
 
             sectionTexts = [adjust(text) for text in thisChapter.find_all(class_="js-novel-text")]
@@ -144,7 +149,7 @@ class Novel:
 
             with open(os.path.join(__location__, 'files/chaptertemplate.xhtml'), encoding="utf-8") as t:
                 template = string.Template(t.read())
-                finalOutput = template.substitute(TITLETAG=title, BODYTAG=chapterText)
+                finalOutput = template.substitute(TITLETAG=title, BODYTAG=chapterText, HTMLCLASS=horizontal_class)
                 with open(os.path.join(tempDir.name, self.title, 'OEBPS', (str(i + 1) + '.xhtml')), "w", encoding="utf-8") as output:
                     output.write(finalOutput)
             chapterList += "<item media-type=\"application/xhtml+xml\" href=\"" + \
@@ -154,7 +159,7 @@ class Novel:
         with open(os.path.join(__location__, 'files/content.opf'), encoding="utf-8") as t:
             template = string.Template(t.read())
             finalOutput = template.substitute(IDTAG=self.seriesCode, TITLETAG=self.title, AUTHORTAG=self.author, TIMESTAMPTAG=datetime.now(
-                pytz.utc).isoformat().split('.', 1)[0] + 'Z', CHAPTERSTAG=chapterList, SPINETAG=chapterListSpine)
+                pytz.utc).isoformat().split('.', 1)[0] + 'Z', CHAPTERSTAG=chapterList, SPINETAG=chapterListSpine, PAGEDIRECTION=page_direction)
             oebpsDir = os.path.join(tempDir.name, self.title, "OEBPS")
             with open(os.path.join(oebpsDir, "content.opf"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
@@ -212,15 +217,20 @@ if __name__ == "__main__":
             link = arg
         if "-c" in arg:
             compact = True
+        if "--horizontal" in arg:
+            horizontal_class = 'horizontal'
+            page_direction = 'ltr'
         if "--min" in arg:
             if i + 1 < len(sys.argv) and str.isdigit(sys.argv[i + 1]):
                 min_chapter = int(sys.argv[i + 1])
+                skip_next = True
             else:
                 print("Error: No min_chapter found after --min.")
                 os._exit(0)
         if "--max" in arg:
             if i + 1 < len(sys.argv) and str.isdigit(sys.argv[i + 1]):
                 max_chapter = int(sys.argv[i + 1])
+                skip_next = True
             else:
                 print("Error: No min_chapter found after --max.")
                 os._exit(0)
@@ -231,6 +241,7 @@ if __name__ == "__main__":
             print("`-c`: Syosetu.com adds large spacing between blocks of text via br tags, which may greatly reduce the amount of words per page shown. Use `-c` to enable compact mode and ignore these spacers.")
             print("`--min`: Minimum chapter to start downloading from.")
             print("`--max`: Maximum chapter to download until.")
+            print("`--horizontal`: Displays text horizontally instead of vertically. Scrolling between pages will also be from left to right instead of right to left.")
             os._exit(0)
 
     if link == None:

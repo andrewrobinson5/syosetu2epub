@@ -13,3 +13,7 @@ It will produce an e-reader friendly, valid EPUB3 document.
 
 ## Chapter Range
 If you would prefer to download specific chapters, and not the whole novel, add the flag --min # and/or --max #, such as ```python syosetu2epub.py https://*syosetu.com/****** --min 10 --max 50```
+
+## Horizontal Text
+Default mode outputs text vertically and flip pages from right to left.
+Use the flag ```--horizontal``` in order to read text horizontally and flip pages from left to right.
