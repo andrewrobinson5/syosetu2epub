@@ -22,7 +22,7 @@
         <item media-type="application/x-dtbncx+xml" href="toc.ncx" id="_toc.ncx" />
         ${CHAPTERSTAG}
     </manifest>
-    <spine page-progression-direction="rtl" toc="_toc.ncx">
+    <spine page-progression-direction="${PAGEDIRECTION}" toc="_toc.ncx">
         <itemref idref="_titlepage.xhtml" />
         <itemref idref="_nav.xhtml" />
         ${SPINETAG}

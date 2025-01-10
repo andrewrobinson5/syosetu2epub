@@ -14,6 +14,8 @@ cwd = os.getcwd()
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 compact = False
+horizontal_class = ''
+page_direction = 'rtl'
 min_chapter = 0
 max_chapter = 100000000
 
@@ -110,7 +112,7 @@ class Novel:
         # THE FOLLOWING WRITES THE COMPLETE TABLE OF CONTENTS AND TITLE PAGE FILES
         with open(os.path.join(__location__, 'files/nav.xhtml'), encoding="utf-8") as t:
             template = string.Template(t.read())
-            finalOutput = template.substitute(TITLETAG=self.title, TOCTAG=self.tocInsert)
+            finalOutput = template.substitute(TITLETAG=self.title, TOCTAG=self.tocInsert, HTMLCLASS=horizontal_class)
             oebpsDir = os.path.join(tempDir.name, self.title, "OEBPS")
             with open(os.path.join(oebpsDir, "nav.xhtml"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
@@ -144,7 +146,7 @@ class Novel:
 
             with open(os.path.join(__location__, 'files/chaptertemplate.xhtml'), encoding="utf-8") as t:
                 template = string.Template(t.read())
-                finalOutput = template.substitute(TITLETAG=title, BODYTAG=chapterText)
+                finalOutput = template.substitute(TITLETAG=title, BODYTAG=chapterText, HTMLCLASS=horizontal_class)
                 with open(os.path.join(tempDir.name, self.title, 'OEBPS', (str(i + 1) + '.xhtml')), "w", encoding="utf-8") as output:
                     output.write(finalOutput)
             chapterList += "<item media-type=\"application/xhtml+xml\" href=\"" + \
@@ -154,7 +156,7 @@ class Novel:
         with open(os.path.join(__location__, 'files/content.opf'), encoding="utf-8") as t:
             template = string.Template(t.read())
             finalOutput = template.substitute(IDTAG=self.seriesCode, TITLETAG=self.title, AUTHORTAG=self.author, TIMESTAMPTAG=datetime.now(
-                pytz.utc).isoformat().split('.', 1)[0] + 'Z', CHAPTERSTAG=chapterList, SPINETAG=chapterListSpine)
+                pytz.utc).isoformat().split('.', 1)[0] + 'Z', CHAPTERSTAG=chapterList, SPINETAG=chapterListSpine, PAGEDIRECTION=page_direction)
             oebpsDir = os.path.join(tempDir.name, self.title, "OEBPS")
             with open(os.path.join(oebpsDir, "content.opf"), "w", encoding="utf-8") as output:
                 output.write(finalOutput)
@@ -212,6 +214,9 @@ if __name__ == "__main__":
             link = arg
         if "-c" in arg:
             compact = True
+        if "--horizontal" in arg:
+            horizontal_class = 'horizontal'
+            page_direction = 'ltr'
         if "--min" in arg:
             if i + 1 < len(sys.argv) and str.isdigit(sys.argv[i + 1]):
                 min_chapter = int(sys.argv[i + 1])
@@ -231,6 +236,7 @@ if __name__ == "__main__":
             print("`-c`: Syosetu.com adds large spacing between blocks of text via br tags, which may greatly reduce the amount of words per page shown. Use `-c` to enable compact mode and ignore these spacers.")
             print("`--min`: Minimum chapter to start downloading from.")
             print("`--max`: Maximum chapter to download until.")
+            print("`--horizontal`: Displays text horizontally instead of vertically. Scrolling between pages will also be from left to right instead of right to left.")
             os._exit(0)
 
     if link == None:
